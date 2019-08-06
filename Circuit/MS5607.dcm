@@ -1,0 +1,7 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP MS5607
+D MS5607 Barometric Pressure Sensor
+$ENDCMP
+#
+#End Doc Library
