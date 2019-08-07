@@ -24,6 +24,8 @@ const unsigned long minwaittime = 300000; //minimum time in milliseconds to wait
 const int posopen = 0; //open position in degrees
 const int posclose = 160; //close position in degrees
 
+const int nalt = 100;// number of altitude measurements to average
+
 
 
                           
@@ -52,6 +54,11 @@ long int GetAltitude(void); //get altitude in meters
 int InitServo(void); //reset servos
                      //returns 0 if successful
 
+double PtoAlt(double pressure); //converts pressure in pascal to altitude in meters
+
+
+long int AverageAlt(int n); //get an average of n number of altitude measurements
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -70,26 +77,25 @@ void loop() {
   // put your main code here, to run repeatedly:
   for(int i = 0; i < numservo; i++){ //loop through each servo in the servos array
     if(servos[i].on == true){ //do only if servo is enabled
+
+      long int alt = AverageAlt(nalt);//altitude value to use
       
-      if(servos[i].servoopen == false && 
-        GetAltitude() >= servos[i].altmin
-        &&  GetAltitude() <= servos[i].altmax) {
+      if(!servos[i].servoopen && 
+        (alt >= servos[i].altmin &&  alt <= servos[i].altmax)) {
         //if closed and within the desired altitude range
         servos[i].sv.write(posopen);//open petri dish
         servos[i].timeopened = millis();//set the time if was opened
         servos[i].servoopen = true;//mark that this servo was opened
       }
       
-      else if(servos[i].servoopen == true && //if open
-      !(GetAltitude() >= servos[i].altmin &&  GetAltitude() <= servos[i].altmax) && //and outside of altitude range
-      millis() - servos[i].timeopened > minwaittime){ //and enough time has elapsed
+      else if(servos[i].servoopen && 
+      !(alt >= servos[i].altmin && alt <= servos[i].altmax) &&
+      (millis() - servos[i].timeopened) > minwaittime){ 
+        //if open and outside of altitude range
+        //and enough time has elapsed
         servos[i].sv.write(posclose);//close petri dish
         servos[i].servoopen = false;//mark that this servo was closed
         servos[i].on = false;//set it as off so it dosent open again
-      }
-
-      else {
-        //dont do anything if it isn't changing state
       }
       
     }
@@ -122,25 +128,25 @@ long int GetAltitude(void){ //get altitude in meters
   switch (psensor) {
     
     case 0://analog 0
-      pressure = (((((double)analogRead(A0))/(1024.0/5.0))-(0.1*5.0))*103421)/(0.8*5.0);
+      pressure = (((((double)analogRead(0))/(1024.0/5.0))-(0.1*5.0))*103421)/(0.8*5.0);
       //read and calculate pressure in pascals
       break;
 
 
     case 1://analog 1
-      pressure = (((((double)analogRead(A1))/(1024.0/5.0))-(0.1*5.0))*103421)/(0.8*5.0);
+      pressure = (((((double)analogRead(1))/(1024.0/5.0))-(0.1*5.0))*103421)/(0.8*5.0);
       //read and calculate pressure in pascals
       break;
 
 
     case 2://analog 2
-      pressure = (((((double)analogRead(A2))/(1024.0/5.0))-(0.1*5.0))*103421)/(0.8*5.0);
+      pressure = (((((double)analogRead(2))/(1024.0/5.0))-(0.1*5.0))*103421)/(0.8*5.0);
       //read and calculate pressure in pascals
       break;
 
 
     case 3://analog 3
-      pressure = (((((double)analogRead(A3))/(1024.0/5.0))-(0.1*5.0))*103421)/(0.8*5.0);
+      pressure = (((((double)analogRead(3))/(1024.0/5.0))-(0.1*5.0))*103421)/(0.8*5.0);
       //read and calculate pressure in pascals
       break;
 
@@ -156,11 +162,9 @@ long int GetAltitude(void){ //get altitude in meters
       return -1;//return error
   }
 
-  long int altitude = (long int)(0.3048*145366.45*(1-pow((pressure/101325), 0.190284))); 
-  //altitude from pressure equation from https://www.weather.gov/media/epz/wxcalc/pressureAltitude.pdf
-  //converted to meters and pascal
-  //may be inaccurate above ~16km in altitude
-  if(altitude < 0){
+  long int altitude = (long int)PtoAlt(pressure); //get altitude for that pressure
+
+  if(altitude < 0){ //return 0 meters altitude if too low 
     return 0;
   }
   return altitude;
@@ -178,3 +182,21 @@ int InitServo(void){ //reset servos
   }
   return 0;
 }
+
+
+
+double PtoAlt(double pressure){//converts pressure in pascal to altitude in meters
+  return (0.3048*145366.45*(1-pow((pressure/101325), 0.190284)));
+  //altitude from pressure equation from https://www.weather.gov/media/epz/wxcalc/pressureAltitude.pdf
+  //converted to meters and pascal
+  //may be inaccurate above ~16km in altitude
+}
+
+long int AverageAlt(int n){ //get an average of n number of altitude measurements
+  long int alt = 0;
+  for(int i = 0; i < n; i++){
+    alt = alt + GetAltitude();
+  }
+  return alt/(long int)n;
+}
+
