@@ -24,10 +24,11 @@ const unsigned long minwaittime = 300000; //minimum time in milliseconds to wait
 const int posopen = 0; //open position in degrees
 const int posclose = 160; //close position in degrees
 
-const int nalt = 100;// number of altitude measurements to average
 
 
 
+
+int nalt; //number of altitude measurements to average
                           
 struct ServoControl {
   bool on; //true if servo is in use/connected to the board
@@ -67,6 +68,14 @@ void setup() {
   Wire.beginTransmission(119);
   Wire.write(byte(0x1E)); //reset command
   Wire.endTransmission(); 
+  if(0 <= psensor && psensor <= 3){
+    nalt = 100; //average 100 values for analog sensor 
+  }
+  else{
+    nalt = 4; //average 4 values for digital sensor
+  }
+  
+  
   EnableServo(0, 8000, 10000); //set the petri dish mechanism with the servo connected on
                               //pin 0 to open at 8000 meters and close at 10000 meters
   
