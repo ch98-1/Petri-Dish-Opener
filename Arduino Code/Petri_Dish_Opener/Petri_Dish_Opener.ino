@@ -122,25 +122,25 @@ long int GetAltitude(void){ //get altitude in meters
   switch (psensor) {
     
     case 0://analog 0
-      pressure = ((((double)analogRead(A0))/(1024.0/5.0))-(0.1*5.0)*103421)/(0.8*5.0);
+      pressure = (((((double)analogRead(A0))/(1024.0/5.0))-(0.1*5.0))*103421)/(0.8*5.0);
       //read and calculate pressure in pascals
       break;
 
 
     case 1://analog 1
-      pressure = ((((double)analogRead(A1))/(1024.0/5.0))-(0.1*5.0)*103421)/(0.8*5.0);
+      pressure = (((((double)analogRead(A1))/(1024.0/5.0))-(0.1*5.0))*103421)/(0.8*5.0);
       //read and calculate pressure in pascals
       break;
 
 
     case 2://analog 2
-      pressure = ((((double)analogRead(A2))/(1024.0/5.0))-(0.1*5.0)*103421)/(0.8*5.0);
+      pressure = (((((double)analogRead(A2))/(1024.0/5.0))-(0.1*5.0))*103421)/(0.8*5.0);
       //read and calculate pressure in pascals
       break;
 
 
     case 3://analog 3
-      pressure = ((((double)analogRead(A3))/(1024.0/5.0))-(0.1*5.0)*103421)/(0.8*5.0);
+      pressure = (((((double)analogRead(A3))/(1024.0/5.0))-(0.1*5.0))*103421)/(0.8*5.0);
       //read and calculate pressure in pascals
       break;
 
