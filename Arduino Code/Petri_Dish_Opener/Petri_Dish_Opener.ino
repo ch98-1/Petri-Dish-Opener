@@ -6,21 +6,23 @@
 //it will wait until the timer has elapsed before taking action.
 //do not use for more that ~50 days at a time as the timer overflowing
 //can cause undefined behavior
+//pressure to altitude conversion may be inaccurate above ~16km in altitude
 
 #include <Servo.h> //servo library
 #include <Wire.h> //I2C library for digital barometric pressure sensor
+#include <math.h>
 
 
 //constants
 const int numservo = 12; //number of total usable servo pins/petri dishes 
                          //12 with the arduino's servo library on arduino uno.
-const int psensor = 4; //uses external analog seosor ASDXACX015PAAA5 if 0 to 3, 
+const int psensor = 0; //uses external analog seosor ASDXACX015PAAA5 if 0 to 3, 
                          //A0 if 0, A1 if 1, A2 if 2, A3 if 3,
                          //uses digital sensor on arduino shield if 4
 const unsigned long minwaittime = 300000; //minimum time in milliseconds to wait
                                           //before the open petri dish can close
-const int posopen = 180; //open position in degrees
-const int posclose = 0; //close position in degrees
+const int posopen = 0; //open position in degrees
+const int posclose = 160; //close position in degrees
 
 
 
@@ -45,6 +47,7 @@ int EnableServo(int pin, long int minalt, long int maxalt);//enable the servo th
 long int GetAltitude(void); //get altitude in meters
                             //returns 0 if at or below sealevel
                             //returns -1 if unsccessful
+                            //may be inaccurate above ~16km in altitude
                        
 
 int InitServo(void); //reset servos
@@ -55,9 +58,11 @@ void setup() {
   // put your setup code here, to run once:
   InitServo();//initialise the servo setup
   Wire.begin();// join i2c bus
-  
-  EnableServo(0, 1000, 2000); //set the petri dish mechanism with the servo connected on
-                              //pin 0 to open at 1000 meters and close at 2000 meters
+  Wire.beginTransmission(119);
+  Wire.write(byte(0x1E)); //reset command
+  Wire.endTransmission(); 
+  EnableServo(0, 8000, 10000); //set the petri dish mechanism with the servo connected on
+                              //pin 0 to open at 8000 meters and close at 10000 meters
   
 
 }
@@ -68,8 +73,8 @@ void loop() {
     if(servos[i].on == true){ //do only if servo is enabled
       
       if(servos[i].servoopen == false && 
-        GetAltitude() > servos[i].altmin
-        &&  GetAltitude() < servos[i].altmax) {
+        GetAltitude() >= servos[i].altmin
+        &&  GetAltitude() <= servos[i].altmax) {
         //if closed and within the desired altitude range
         servos[i].sv.write(posopen);//open petri dish
         servos[i].timeopened = millis();//set the time if was opened
@@ -77,7 +82,7 @@ void loop() {
       }
       
       else if(servos[i].servoopen == true && //if open
-      (GetAltitude() < servos[i].altmin || GetAltitude() > servos[i].altmax) && //and outside of altitude range
+      (GetAltitude() <= servos[i].altmin || GetAltitude() >= servos[i].altmax) && //and outside of altitude range
       millis() - servos[i].timeopened > minwaittime){ //and enough time has elapsed
         servos[i].sv.write(posclose);//close petri dish
         servos[i].servoopen = false;//mark that this servo was closed
@@ -85,7 +90,7 @@ void loop() {
       }
 
       else {
-        //dont do anything if it isnt changing state
+        //dont do anything if it isn't changing state
       }
       
     }
@@ -111,37 +116,55 @@ int EnableServo(int pin, long int minalt, long int maxalt){//enable the servo th
 long int GetAltitude(void){ //get altitude in meters
                             //returns 0 if at or below sealevel
                             //returns -1 if unsccessful
+                            //may be inaccurate above ~16km in altitude
+                            
+  double pressure; //pressure in pascals    
+                        
   switch (psensor) {
+    
     case 0://analog 0
-      
-      return 0;
+      pressure = ((((double)analogRead(A0))/(1024.0/5.0))-(0.1*5.0)*103421)/(0.8*5.0);
+      //read and calculate pressure in pascals
+      break;
 
 
     case 1://analog 1
-      
-      return 0;
+      pressure = ((((double)analogRead(A1))/(1024.0/5.0))-(0.1*5.0)*103421)/(0.8*5.0);
+      //read and calculate pressure in pascals
+      break;
 
 
     case 2://analog 2
+      pressure = ((((double)analogRead(A2))/(1024.0/5.0))-(0.1*5.0)*103421)/(0.8*5.0);
+      //read and calculate pressure in pascals
+      break;
 
-      return 0;
 
-
-    case 1://analog 3
-      
-      return 0;
+    case 3://analog 3
+      pressure = ((((double)analogRead(A3))/(1024.0/5.0))-(0.1*5.0)*103421)/(0.8*5.0);
+      //read and calculate pressure in pascals
+      break;
 
 
     case 4://digital pressure sensor
-      
-      return 0;
+
+      pressure = 101325.0;
+      break;
 
    
     default:
       //this shouldn't happen
-      
-      return 0;//simulate 0 altitude
+      return -1;//return error
   }
+
+  long int altitude = (long int)(0.3048*145366.45*(1-pow((pressure/101325), 0.190284))); 
+  //altitude from pressure equation from https://www.weather.gov/media/epz/wxcalc/pressureAltitude.pdf
+  //converted to meters and pascal
+  //may be inaccurate above ~16km in altitude
+  if(altitude < 0){
+    return 0;
+  }
+  return altitude;
 }
                        
 
