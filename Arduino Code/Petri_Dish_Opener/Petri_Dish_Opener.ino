@@ -81,7 +81,7 @@ void loop() {
       }
       
       else if(servos[i].servoopen == true && //if open
-      (GetAltitude() <= servos[i].altmin || GetAltitude() >= servos[i].altmax) && //and outside of altitude range
+      !(GetAltitude() >= servos[i].altmin &&  GetAltitude() <= servos[i].altmax) && //and outside of altitude range
       millis() - servos[i].timeopened > minwaittime){ //and enough time has elapsed
         servos[i].sv.write(posclose);//close petri dish
         servos[i].servoopen = false;//mark that this servo was closed
