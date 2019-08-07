@@ -42,7 +42,6 @@ int EnableServo(int pin, long int minalt, long int maxalt);//enable the servo th
                                                   //minalt is the altitude it opens at (in meters)
                                                   //maxalt is the altitude is closes at (in meters)
                                                   //returns 0 if successful
-                                                  //minalt can be lower than maxalt
 
 long int GetAltitude(void); //get altitude in meters
                             //returns 0 if at or below sealevel
