@@ -19,11 +19,11 @@ const int numservo = 12; //number of total usable servo pins/petri dishes
 const int psensor = 0; //uses external analog seosor ASDXACX015PAAA5 if 0 to 3, 
                          //A0 if 0, A1 if 1, A2 if 2, A3 if 3,
                          //uses digital sensor on arduino shield if 4
-const unsigned long minwaittime = 300; //minimum time in milliseconds to wait
+const unsigned long minwaittime = 300000; //minimum time in milliseconds to wait
                                           //before the open petri dish can close
 const int posopen = 0; //open position in degrees
 const int posclose = 160; //close position in degrees
-const bool debug = true; // enable or disable 9600 baud debug messages from usb
+const bool debug = false; // enable or disable 9600 baud debug messages from usb
 
 
 
