@@ -75,9 +75,14 @@ void setup() {
     nalt = 4; //average 4 values for digital sensor
   }
   
-  
-  EnableServo(0, 8000, 10000); //set the petri dish mechanism with the servo connected on
-                              //pin 0 to open at 8000 meters and close at 10000 meters
+
+
+  //servo setup
+  EnableServo(0, 2000, 4000); //set the petri dish mechanism with the servo connected on
+                              //pin 0 to open at 2000 meters and close at 4000 meters
+  EnableServo(1, 5000, 7000);//pin 1 to open at 5000 meters and close at 7000 meters
+  EnableServo(2, 8000, 10000);//pin 2 to open at 8000 meters and close at 10000 meters
+  EnableServo(3, 11000, 13000);//pin 3 to open at 11000 meters and close at 13000 meters
   
 
 }
