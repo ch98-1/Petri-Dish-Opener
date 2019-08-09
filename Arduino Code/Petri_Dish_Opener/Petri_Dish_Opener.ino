@@ -19,11 +19,11 @@ const int numservo = 12; //number of total usable servo pins/petri dishes
 const int psensor = 0; //uses external analog seosor ASDXACX015PAAA5 if 0 to 3, 
                          //A0 if 0, A1 if 1, A2 if 2, A3 if 3,
                          //uses digital sensor on arduino shield if 4
-const unsigned long minwaittime = 300000; //minimum time in milliseconds to wait
+const unsigned long minwaittime = 300; //minimum time in milliseconds to wait
                                           //before the open petri dish can close
 const int posopen = 0; //open position in degrees
 const int posclose = 160; //close position in degrees
-
+const bool debug = true; // enable or disable 9600 baud debug messages from usb
 
 
 
@@ -74,7 +74,10 @@ void setup() {
   else{
     nalt = 4; //average 4 values for digital sensor
   }
-  
+
+  if (debug){//if debug is enabled
+    Serial.begin(9600);//set up serial for debug
+  }
 
 
   //servo setup
@@ -84,7 +87,6 @@ void setup() {
   EnableServo(2, 8000, 10000);//pin 2 to open at 8000 meters and close at 10000 meters
   EnableServo(3, 11000, 13000);//pin 3 to open at 11000 meters and close at 13000 meters
   
-
 }
 
 void loop() {
@@ -98,6 +100,10 @@ void loop() {
         (alt >= servos[i].altmin &&  alt <= servos[i].altmax)) {
         //if closed and within the desired altitude range
         servos[i].sv.write(posopen);//open petri dish
+        if (debug){ //if debug is enabled
+          Serial.println("open"); //report what was opened
+          Serial.println(i);
+        }
         servos[i].timeopened = millis();//set the time if was opened
         servos[i].servoopen = true;//mark that this servo was opened
       }
@@ -108,6 +114,10 @@ void loop() {
         //if open and outside of altitude range
         //and enough time has elapsed
         servos[i].sv.write(posclose);//close petri dish
+        if(debug) { //if debug is enabled
+          Serial.println("close"); //report what was closed
+          Serial.println(i);
+        }
         servos[i].servoopen = false;//mark that this servo was closed
         servos[i].on = false;//set it as off so it dosent open again
       }
@@ -209,8 +219,8 @@ double PtoAlt(double pressure){//converts pressure in pascal to altitude in mete
 long int AverageAlt(int n){ //get an average of n number of altitude measurements
   long int alt = 0;
   for(int i = 0; i < n; i++){
-    alt = alt + GetAltitude();
+    alt = alt + GetAltitude();//add together altitudes
   }
-  return alt/(long int)n;
+  return alt/(long int)n;//return the averaged altitude
 }
 
