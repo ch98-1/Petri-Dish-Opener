@@ -223,4 +223,3 @@ long int AverageAlt(int n){ //get an average of n number of altitude measurement
   }
   return alt/(long int)n;//return the averaged altitude
 }
-
