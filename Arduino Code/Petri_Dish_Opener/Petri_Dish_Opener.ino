@@ -7,6 +7,7 @@
 //do not use for more that ~50 days at a time as the timer overflowing
 //can cause undefined behavior
 //pressure to altitude conversion may be inaccurate above ~16km in altitude
+//pressure in pascals, altitude in meters, angle in degrees
 
 #include <Servo.h> //servo library
 #include <Wire.h> //I2C library for digital barometric pressure sensor
@@ -16,15 +17,62 @@
 //constants
 const int numservo = 12; //number of total usable servo pins/petri dishes 
                          //12 with the arduino's servo library on arduino uno.
+
+
+
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* Edit Vlues Here*/
+                         
 const int psensor = 0; //uses external analog seosor ASDXACX015PAAA5 if 0 to 3, 
                          //A0 if 0, A1 if 1, A2 if 2, A3 if 3,
                          //uses digital sensor on arduino shield if 4
 const unsigned long minwaittime = 300000; //minimum time in milliseconds to wait
                                           //before the open petri dish can close
-const int posopen = 0; //open position in degrees
-const int posclose = 160; //close position in degrees
-const bool debug = false; // enable or disable 9600 baud debug messages from usb
+const bool debug = false; // enable or disable 9600 baud debug messages from usb serial
 
+/* End of Values to Edit */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
 
 
 
@@ -33,17 +81,21 @@ int nalt; //number of altitude measurements to average
 struct ServoControl {
   bool on; //true if servo is in use/connected to the board
   Servo sv; //servo motor controller object
-  long int altmin; //minimum altitude needed for petri dish to open
-  long int altmax; //maximum altitude above which the petri dish will close
+  long int altmin; //minimum altitude needed for petri dish to open in meters
+  long int altmax; //maximum altitude above which the petri dish will close in meters
+  int degclose; //angle the petri dish will close to in degrees
+  int degopen; //angle the petri dish will open to in degrees
   bool servoopen; //true if petri dish is open
   unsigned long timeopened; //time the petri dish was opened in milliseconds
 };
 
 ServoControl servos[numservo];//array of servos we can control
 
-int EnableServo(int pin, long int minalt, long int maxalt);//enable the servo that is connected
+int EnableServo(int pin, long int minalt, long int maxalt, int closed, int opened);//enable the servo that is connected
                                                   //minalt is the altitude it opens at (in meters)
                                                   //maxalt is the altitude is closes at (in meters)
+                                                  //closed is the angle the servo closes to (in degrees)
+                                                  //opened is the angle the servo openes to (in degrees)
                                                   //returns 0 if successful
 
 long int GetAltitude(void); //get altitude in meters
@@ -80,12 +132,70 @@ void setup() {
   }
 
 
+
+
+
+
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* v v v v v v v v v v v v v v v v v v v v */
+/* Edit Vlues Here*/
+
   //servo setup
-  EnableServo(0, 2000, 4000); //set the petri dish mechanism with the servo connected on
+  EnableServo(0, 2000, 4000, 170, 60); //set the petri dish mechanism with the servo connected on
                               //pin 0 to open at 2000 meters and close at 4000 meters
-  EnableServo(1, 5000, 7000);//pin 1 to open at 5000 meters and close at 7000 meters
-  EnableServo(2, 8000, 10000);//pin 2 to open at 8000 meters and close at 10000 meters
-  EnableServo(3, 11000, 13000);//pin 3 to open at 11000 meters and close at 13000 meters
+                              //Opens to 60 degrees and closes to 170 degrees.
+  EnableServo(1, 5000, 7000, 170, 60);//pin 1 to open at 5000 meters and close at 7000 meters
+                                      //Opens to 60 degrees and closes to 170 degrees.
+  EnableServo(2, 8000, 10000, 167, 60);//pin 2 to open at 8000 meters and close at 10000 meters
+                                       //Opens to 60 degrees and closes to 167 degrees.
+  EnableServo(3, 11000, 13000, 162, 60);//pin 3 to open at 11000 meters and close at 13000 meters
+                                        //Opens to 60 degrees and closes to 162 degrees.
+
+/* End of Values to Edit */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+/* ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ */
+
+
+
   
 }
 
@@ -99,7 +209,7 @@ void loop() {
       if(!servos[i].servoopen && 
         (alt >= servos[i].altmin &&  alt <= servos[i].altmax)) {
         //if closed and within the desired altitude range
-        servos[i].sv.write(posopen);//open petri dish
+        servos[i].sv.write(servos[i].degopen);//open petri dish
         if (debug){ //if debug is enabled
           Serial.println("open"); //report what was opened
           Serial.println(i);
@@ -113,7 +223,7 @@ void loop() {
       (millis() - servos[i].timeopened) > minwaittime){ 
         //if open and outside of altitude range
         //and enough time has elapsed
-        servos[i].sv.write(posclose);//close petri dish
+        servos[i].sv.write(servos[i].degclose);//close petri dish
         if(debug) { //if debug is enabled
           Serial.println("close"); //report what was closed
           Serial.println(i);
@@ -127,18 +237,21 @@ void loop() {
 }
 
 
-int EnableServo(int pin, long int minalt, long int maxalt){//enable the servo that is connected
+int EnableServo(int pin, long int minalt, long int maxalt, int closed, int opened){//enable the servo that is connected
                                                   //minalt is the altitude it opens at (in meters)
                                                   //maxalt is the altitude is closes at (in meters)
+                                                  //closed is the angle the servo closes to (in degrees)
+                                                  //opened is the angle the servo openes to (in degrees)
                                                   //returns 0 if successful
-                                                 //minalt can be lower than maxalt
   servos[pin].on = true; //set each values to the given input
   servos[pin].altmin = minalt;
   servos[pin].altmax = maxalt;
+  servos[pin].degclose = closed;
+  servos[pin].degopen = opened;
   servos[pin].servoopen = false;
   servos[pin].timeopened = 0;
   servos[pin].sv.attach(pin);//attach servo to the specified pin
-  servos[pin].sv.write(posclose);//close petri dish at start
+  servos[pin].sv.write(closed);//close petri dish at start
   return 0;
 }
 
