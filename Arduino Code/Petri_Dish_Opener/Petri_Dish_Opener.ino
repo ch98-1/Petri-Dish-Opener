@@ -6,7 +6,7 @@
 //it will wait until the timer has elapsed before taking action.
 //do not use for more that ~50 days at a time as the timer overflowing
 //can cause undefined behavior
-//pressure to altitude conversion may be inaccurate above ~16km in altitude
+//pressure to altitude conversion only works to 50km in altitude
 //pressure in pascals, altitude in meters, angle in degrees
 
 #include <Servo.h> //servo library
@@ -101,7 +101,7 @@ int EnableServo(int pin, long int minalt, long int maxalt, int closed, int opene
 long int GetAltitude(void); //get altitude in meters
                             //returns 0 if at or below sealevel
                             //returns -1 if unsccessful
-                            //may be inaccurate above ~16km in altitude
+                            //only works to 50km in altitude
                        
 
 int InitServo(void); //reset servos
@@ -160,14 +160,14 @@ void setup() {
 /* Edit Vlues Here*/
 
   //servo setup
-  EnableServo(0, 2000, 4000, 170, 60); //set the petri dish mechanism with the servo connected on
-                              //pin 0 to open at 2000 meters and close at 4000 meters
+  EnableServo(0, 1524, 7620, 170, 60); //set the petri dish mechanism with the servo connected on
+                              //pin 0 to open at 1524 meters and close at 7620 meters (5,000 to 25,000 ft)
                               //Opens to 60 degrees and closes to 170 degrees.
-  EnableServo(1, 5000, 7000, 170, 60);//pin 1 to open at 5000 meters and close at 7000 meters
+  EnableServo(1, 7620, 15240, 170, 60);//pin 1 to open at 7620 meters and close at 15240 meters (25,000 to 50,000 ft)
                                       //Opens to 60 degrees and closes to 170 degrees.
-  EnableServo(2, 8000, 10000, 167, 60);//pin 2 to open at 8000 meters and close at 10000 meters
+  EnableServo(2, 15240, 21336, 167, 60);//pin 2 to open at 15240 meters and close at 21336 meters (50,000 to 70,000 ft)
                                        //Opens to 60 degrees and closes to 167 degrees.
-  EnableServo(3, 11000, 13000, 162, 60);//pin 3 to open at 11000 meters and close at 13000 meters
+  EnableServo(3, 21336, 27432, 162, 60);//pin 3 to open at 21336 meters and close at 27432 meters (70,000 to 90,000 ft)
                                         //Opens to 60 degrees and closes to 162 degrees.
 
 /* End of Values to Edit */
@@ -323,10 +323,79 @@ int InitServo(void){ //reset servos
 
 
 double PtoAlt(double pressure){//converts pressure in pascal to altitude in meters
+  /* old code
   return (0.3048*145366.45*(1-pow((pressure/101325), 0.190284)));
   //altitude from pressure equation from https://www.weather.gov/media/epz/wxcalc/pressureAltitude.pdf
   //converted to meters and pascal
   //may be inaccurate above ~16km in altitude
+  */
+  
+  //index is altitude in meters/1000, value is pressure in pascals
+  //altitude is geometric altitude
+  //table pulled from Appendix D of Fundermentals of Aerodynamics, 6th edition, 
+  //International student edition, by John Anderson (ISBN 978-1-259-25134-4)
+  const double alttable[51] = { 1.01325e5,
+                                8.9876e4,
+                                7.9501e4,
+                                7.0121e4,
+                                6.1660e4,
+                                5.4048e4,
+                                4.7217e4,
+                                4.1105e4,
+                                3.5651e4,
+                                3.0800e4,
+                                2.6500e4,
+                                2.2700e4,
+                                1.9399e4,
+                                1.6579e4,
+                                1.4170e4,
+                                1.2112e4,
+                                1.0353e4,
+                                8.8496e3,
+                                7.5652e3,
+                                6.4674e3,
+                                5.5293e3,
+                                4.7274e3,
+                                4.0420e3,
+                                3.4562e3,
+                                2.9554e3,
+                                2.5273e3,
+                                2.1632e3,
+                                1.8555e3,
+                                1.5946e3,
+                                1.3737e3,
+                                1.1855e3,
+                                1.0251e3,
+                                8.8803e2,
+                                7.7069e2,
+                                6.7007e2,
+                                5.8359e2,
+                                5.0914e2,
+                                4.4493e2,
+                                3.8944e2,
+                                3.4131e2,
+                                2.9977e2,
+                                2.6361e2,
+                                2.3215e2,
+                                2.0474e2,
+                                1.8082e2,
+                                1.5991e2,
+                                1.4162e2,
+                                1.2558e2,
+                                1.1147e2,
+                                9.8961e1,
+                                8.7858e1
+                                 };
+  
+  if (pressure >= 1.01325E+5) return 0;
+  if (pressure < 8.7858E+1) return -1;
+  
+  int i = 0;
+  while(alttable[i+1] > pressure){
+    i++;
+  }
+
+  return i*1000.0 + ((alttable[i]-pressure)/(alttable[i] - alttable[i+1]))*1000.0; //linearly interpolate the altitudes
 }
 
 long int AverageAlt(int n){ //get an average of n number of altitude measurements
